@@ -19,6 +19,7 @@ Map the user's current situation to the shortest effective skill sequence. Recom
 - **Unfamiliar code (*how* it works)** -> `bro`
 - **Unfamiliar code (*why* it exists)** -> `why`
 - **Implementing a slice or bug fix** -> `tdd`
+- **Designing, critiquing, or polishing frontend / native UI** -> `impeccable`
 - **Multi-ticket / parallelizable batch** -> `orchestrate`
 - **Autonomous execution until goal/plan(s) pass** -> `goal`
 - **New/updated agent CLI tool** -> `cli-for-agent`

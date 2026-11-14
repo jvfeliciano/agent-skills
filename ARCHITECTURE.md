@@ -101,7 +101,7 @@ Outer Loop Payload (specs / bug batch / PR feedback)
 
 ---
 
-## 4. Complete Skill Catalog (29 Skills)
+## 4. Complete Skill Catalog (30 Skills)
 
 | Phase | Skill | Core Purpose | Primary `agx` / Tool Seam |
 |---|---|---|---|
@@ -114,6 +114,7 @@ Outer Loop Payload (specs / bug batch / PR feedback)
 | **Plan** | `plan` | Creates a concise, file-grounded implementation plan before coding | `agx context`, `agx plan` |
 | **Plan** | `to-spec` | Converts aligned design into lean spec + vertically-sliced tracer bullets | `agx plan init` |
 | **Build** | `tdd` | Strict Red-Green-Refactor at public seams; bans tautological mock tests | Test runner |
+| **Design** | `impeccable` | Frontend & native UI design, critique, polish, motion, typography, and design systems | `scripts/impeccable`, `reference/` |
 | **Verify** | `blast-radius` | Audits indirect wire/DB/cache/env breakage; requires executable proof | `agx blast` |
 | **Verify** | `interrogate` | Adversarial pre-PR diff review against concrete bug classes & smells | `agx blast`, `agx god-files` |
 | **Verify** | `verify-loop` | Live UI/API probes + fuzzing + Hill Climbing against weighted checks | `agx rubric score` |

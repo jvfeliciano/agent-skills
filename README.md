@@ -12,7 +12,7 @@ Inspired by the workflows of **Matt Pocock** (`mattpocock/skills`) and **Lauren 
 4. **Michelin Kitchen (Executive Chef)**: The coordinator designs the menu, maintains deterministic tooling, and delegates to isolated workers (`orchestrate`), avoiding micromanagement and throwaway chat scripts.
 5. **Architecture and Principles**: See [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-## Catalog of 29 Skills
+## Catalog of 30 Skills
 
 ### Onboarding & Alignment (before writing code)
 - **`setup`**: Configures a repository for `agent-skills` and `agx` (detects stack, build/test/lint commands, docs, and tracker, and initializes `.agents/state/` and `AGENTS.md`).
@@ -30,6 +30,7 @@ Inspired by the workflows of **Matt Pocock** (`mattpocock/skills`) and **Lauren 
 - **`why`**: Investigates *why* code exists as written via `git log`, `git blame`, and commit/PR history before refactoring.
 - **`writing-for-agents`**: Meta-skill for authoring and compressing `SKILL.md` and `AGENTS.md` with progressive disclosure and precise technical vocabulary.
 - **`tdd`**: Strict Red-Green-Refactor cycle through public module boundaries, banning tautological tests and mock soup.
+- **`impeccable`**: Frontend and native UI design, critique, audit, polish, motion, typography, and design-system capture (`DESIGN.md`, tokens).
 
 ### Safety, Verification & Delivery
 - **`blast-radius`**: Runs `agx blast` and audits indirect couplings (JSON contracts, migrations, caches, environment variables), requiring executable proof instead of assumptions.
