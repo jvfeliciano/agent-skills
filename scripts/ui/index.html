@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>agent-skills Telemetry</title>
+<link rel="stylesheet" href="/ui/styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-row">
+      <h1>agent-skills Telemetry</h1>
+      <span id="versionBadge" class="pill">loading</span>
+    </div>
+    <div id="status" class="muted">Loading...</div>
+  </div>
+  <div class="controls">
+    <button class="primary" id="btnScan">Scan Runs</button>
+    <input id="customPath" placeholder="Path to brain/ or transcript.jsonl" />
+    <button id="btnImport">Import</button>
+    <button id="btnAuto">Auto-Sync: ON</button>
+    <button id="btnRefresh">Refresh</button>
+    <button class="danger" id="btnReset">Reset</button>
+  </div>
+</header>
+
+<nav class="nav-bar">
+  <div class="tabs" id="navTabs">
+    <button class="tab active" data-view="overview">Overview</button>
+    <button class="tab" data-view="sessions">Sessions <span class="count" id="tabSessionCount">0</span></button>
+    <button class="tab" data-view="skills">Skills &amp; agx</button>
+    <button class="tab" data-view="compare">Compare</button>
+  </div>
+  <div class="filters">
+    <div class="tf-group" id="tfButtons">
+      <button class="tf" data-tf="24h">24h</button>
+      <button class="tf" data-tf="7d">7d</button>
+      <button class="tf" data-tf="30d">30d</button>
+      <button class="tf active" data-tf="all">All</button>
+    </div>
+    <input type="date" id="filterFrom" title="From date" />
+    <input type="date" id="filterTo" title="To date" />
+    <select id="filterVersion"><option value="all">All versions</option></select>
+    <input id="filterQuery" placeholder="Search id, model, skill, cwd..." />
+  </div>
+</nav>
+
+<main class="container">
+  <section id="view-overview" class="view"></section>
+  <section id="view-sessions" class="view" hidden></section>
+  <section id="view-skills" class="view" hidden></section>
+  <section id="view-compare" class="view" hidden></section>
+  <section id="view-inspector" class="view" hidden></section>
+</main>
+
+<div id="tooltip" class="tooltip" hidden></div>
+<script type="module" src="/ui/app.js"></script>
+</body>
+</html>

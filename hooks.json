@@ -1,0 +1,31 @@
+{
+  "agent-skills-telemetry": {
+    "enabled": true,
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "./bin/agx telemetry ingest",
+        "timeout": 5
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./bin/agx telemetry ingest",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "./bin/agx telemetry ingest",
+        "timeout": 5
+      }
+    ]
+  }
+}

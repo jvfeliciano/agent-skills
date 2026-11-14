@@ -1,0 +1,20 @@
+{
+  "name": "@strunkzz/agent-skills",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Token-efficient engineering skills and deterministic CLI for coding agents.",
+  "bin": {
+    "agx": "./bin/agx"
+  },
+  "scripts": {
+    "test": "node --test scripts/*.test.ts",
+    "review": "./bin/agx god-files --max-lines 300 --strict && ./bin/agx unslop-check --strict && ./bin/agx rubric score --strict"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "skills/",
+    "rules/",
+    "plugin.json"
+  ]
+}

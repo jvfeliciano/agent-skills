@@ -1,0 +1,11 @@
+{
+  "name": "agent-skills",
+  "displayName": "Michelin Agent Skills & Deterministic CLI",
+  "version": "1.0.0",
+  "description": "Token-efficient engineering skills and deterministic CLI inspired by Matt Pocock and Poteto (pstack): grill-me, blast-radius, unslop, bro, tdd, verify-loop, orchestrate, pattern-buffer, and mine-transcripts.",
+  "suggestedPrompts": [
+    "Use grill-me to stress-test our architecture and resolve design ambiguities before coding",
+    "Run blast-radius and verify-loop on my current git diff before opening a PR",
+    "Mine recent transcripts for repeated corrections and buffer recurring code patterns"
+  ]
+}

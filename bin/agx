@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_TS="$ROOT_DIR/scripts/cli.ts"
+
+die() {
+  echo "ERROR: $1" >&2
+  [ -n "${2:-}" ] && echo "Example: $2" >&2
+  exit 1
+}
+
+print_help() {
+  cat <<'EOF'
+agx - Deterministic CLI for token-efficient coding agents
+
+Usage: agx <command> [options]
+
+Commands:
+  context       Fast repository snapshot (branch, dirty files, extensions, .agents state)
+  god-files     Flag source/doc files exceeding a line threshold (default: 300)
+  blast         Pre-flight blast-radius scan for current diff (modified symbols & refs)
+  buffer        Manage pattern-buffer entries (add | list | triage)
+  plan          Manage Chief-of-Staff orchestration state (init | status | update | next)
+  rubric        Initialize or score verification rubrics (init | score)
+  unslop-check  Scan markdown/prose for banned AI slop patterns
+  mine          Extract user corrections from JSONL transcripts into skill candidates
+  gh            Deterministic GitHub CLI wrappers (checks | comment | merge | retarget | issue-create | pr-create)
+  telemetry     Ingest lifecycle hooks and report tokens, costs, paths, subagents, CLI calls
+  help          Show help for a specific command
+
+Examples:
+  agx context --json
+  agx god-files --max-lines 300
+  agx blast --base HEAD
+  agx buffer add --category react --file src/App.tsx:42 --summary "Missing cleanup"
+  agx unslop-check --file README.md
+  agx help plan
+EOF
+}
+
+run_context() {
+  local target="." json_out=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --help|-h) printf 'Usage: agx context [--path <dir>] [--json]\nExample: agx context --json\n'; exit 0 ;;
+      --path) target="${2:-}"; shift 2 || die "Missing value for --path" "agx context --path ." ;;
+      --json) json_out=1; shift ;;
+      *) die "Unknown flag '$1' for context" "agx context --json" ;;
+    esac
+  done
+  [ -d "$target" ] || die "Directory not found: $target" "agx context --path ."
+
+  local abs_target repo_root branch="no-git" dirty_count=0 commits="" dirty_list="" exts=""
+  abs_target="$(cd "$target" && pwd)"
+  if git -C "$abs_target" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    repo_root="$(git -C "$abs_target" rev-parse --show-toplevel)"
+    branch="$(git -C "$repo_root" branch --show-current 2>/dev/null || true)"
+    [ -z "$branch" ] && branch="detached"
+    dirty_count="$(git -C "$repo_root" status --porcelain | wc -l | tr -d ' ')"
+    commits="$(git -C "$repo_root" log -n 5 --oneline 2>/dev/null || true)"
+    dirty_list="$(git -C "$repo_root" status --porcelain | head -n 10 || true)"
+    exts="$(git -C "$repo_root" ls-files | awk -F. 'NF>1{print $NF}' | sort | uniq -c | sort -rn | head -n 6 | awk '{print $2":"$1}' | paste -sd ',' - || true)"
+  else
+    repo_root="$abs_target"
+    exts="$(rg --files "$repo_root" 2>/dev/null | awk -F. 'NF>1{print $NF}' | sort | uniq -c | sort -rn | head -n 6 | awk '{print $2":"$1}' | paste -sd ',' - || true)"
+  fi
+
+  local state_dir="$repo_root/.agents/state" has_buf=false has_plan=false has_rubric=false buf_count=0
+  if [ -f "$state_dir/pattern-buffer.md" ]; then
+    has_buf=true
+    buf_count="$(grep -c '^- \[' "$state_dir/pattern-buffer.md" || true)"
+  fi
+  [ -f "$state_dir/plan.json" ] && has_plan=true
+  [ -f "$state_dir/rubric.json" ] && has_rubric=true
+
+  if [ "$json_out" -eq 1 ]; then
+    jq -n --arg root "$repo_root" --arg branch "$branch" --argjson dirtyCount "$dirty_count" \
+      --arg dirtyFiles "$dirty_list" --arg recentCommits "$commits" --arg extensions "$exts" \
+      --argjson bufferExists "$has_buf" --argjson bufferEntries "$buf_count" \
+      --argjson planExists "$has_plan" --argjson rubricExists "$has_rubric" \
+      '{root:$root,branch:$branch,dirtyCount:$dirtyCount,dirtyFiles:($dirtyFiles|split("\n")|map(select(length>0))),recentCommits:($recentCommits|split("\n")|map(select(length>0))),topExtensions:($extensions|split(",")|map(select(length>0))),agentsState:{patternBuffer:$bufferExists,bufferEntries:$bufferEntries,plan:$planExists,rubric:$rubricExists}}'
+  else
+    echo "root: $repo_root | branch: $branch | dirty: $dirty_count | ext: ${exts:-none}"
+    echo "state: buffer=${has_buf}(${buf_count}) plan=${has_plan} rubric=${has_rubric}"
+    if [ -n "$dirty_list" ]; then echo "dirty_files:"; echo "$dirty_list" | sed 's/^/  /'; fi
+    if [ -n "$commits" ]; then echo "recent_commits:"; echo "$commits" | sed 's/^/  /'; fi
+  fi
+  return 0
+}
+
+run_god_files() {
+  local max_lines=300 target="." strict=0 json_out=0 show_lines=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --help|-h) printf 'Usage: agx god-files [--max-lines <n>] [--path <file|dir>] [--show-lines] [--strict] [--json]\nExample: agx god-files --max-lines 300 --strict\n'; exit 0 ;;
+      --max-lines) max_lines="${2:-}"; shift 2 || die "Missing value for --max-lines" "agx god-files --max-lines 300" ;;
+      --path) target="${2:-}"; shift 2 || die "Missing value for --path" "agx god-files --path ." ;;
+      --show-lines) show_lines=1; shift ;;
+      --strict) strict=1; shift ;;
+      --json) json_out=1; shift ;;
+      *) die "Unknown flag '$1' for god-files" "agx god-files --max-lines 300" ;;
+    esac
+  done
+  [[ "$max_lines" =~ ^[0-9]+$ ]] || die "--max-lines must be an integer" "agx god-files --max-lines 300"
+
+  local abs_target file_list scanned=0 vcount=0 violations_json="[]" files_json="[]" tmp_rows tmp_all
+  tmp_rows="$(mktemp)"
+  tmp_all="$(mktemp)"
+  trap 'rm -f "$tmp_rows" "$tmp_all"' RETURN
+
+  if [ -f "$target" ]; then
+    show_lines=1
+    scanned=1
+    local lc
+    lc="$(wc -l < "$target" | tr -d ' ')"
+    printf '%s\t%s\n' "$lc" "$target" >> "$tmp_all"
+    if [ "$lc" -gt "$max_lines" ]; then
+      printf '%s\t%s\n' "$lc" "$target" >> "$tmp_rows"
+    fi
+  elif [ -d "$target" ]; then
+    abs_target="$(cd "$target" && pwd)"
+    if git -C "$abs_target" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      file_list="$(cd "$abs_target" && { git ls-files; git ls-files --others --exclude-standard; } | sort -u)"
+    else
+      file_list="$(cd "$abs_target" && rg --files 2>/dev/null | sort -u)"
+    fi
+    while IFS= read -r rel; do
+      [ -z "$rel" ] && continue
+      local full="$abs_target/$rel"
+      [ -f "$full" ] || continue
+      case "$rel" in *.png|*.jpg|*.jpeg|*.gif|*.webp|*.svg|*.ico|*.pdf|*.woff|*.woff2|*.lock|*-lock.json|*.jsonl) continue ;; esac
+      scanned=$((scanned + 1))
+      local lc
+      lc="$(wc -l < "$full" | tr -d ' ')"
+      if [ "$show_lines" -eq 1 ]; then
+        printf '%s\t%s\n' "$lc" "$rel" >> "$tmp_all"
+      fi
+      if [ "$lc" -gt "$max_lines" ]; then
+        printf '%s\t%s\n' "$lc" "$rel" >> "$tmp_rows"
+      fi
+    done <<< "$file_list"
+  else
+    die "Path not found: $target" "agx god-files --path ."
+  fi
+
+  if [ -s "$tmp_rows" ]; then
+    sort -rn "$tmp_rows" -o "$tmp_rows"
+    vcount="$(wc -l < "$tmp_rows" | tr -d ' ')"
+    violations_json="$(awk -F'\t' '{printf "{\"lines\":%s,\"file\":\"%s\"}\n", $1, $2}' "$tmp_rows" | jq -s '.')"
+  fi
+  if [ "$show_lines" -eq 1 ] && [ -s "$tmp_all" ]; then
+    sort -rn "$tmp_all" -o "$tmp_all"
+    files_json="$(awk -F'\t' '{printf "{\"lines\":%s,\"file\":\"%s\"}\n", $1, $2}' "$tmp_all" | jq -s '.')"
+  fi
+
+  if [ "$json_out" -eq 1 ]; then
+    if [ "$show_lines" -eq 1 ]; then
+      jq -n --argjson maxLines "$max_lines" --argjson totalScanned "$scanned" --argjson violationsCount "$vcount" --argjson violations "$violations_json" --argjson files "$files_json" \
+        '{maxLines:$maxLines,totalScanned:$totalScanned,violationsCount:$violationsCount,violations:$violations,files:$files}'
+    else
+      jq -n --argjson maxLines "$max_lines" --argjson totalScanned "$scanned" --argjson violationsCount "$vcount" --argjson violations "$violations_json" \
+        '{maxLines:$maxLines,totalScanned:$totalScanned,violationsCount:$violationsCount,violations:$violations}'
+    fi
+  elif [ "$vcount" -eq 0 ]; then
+    echo "OK: 0 files exceed $max_lines lines ($scanned scanned)."
+    if [ "$show_lines" -eq 1 ] && [ -s "$tmp_all" ]; then
+      awk -F'\t' '{printf "  %5s  %s\n", $1, $2}' "$tmp_all"
+    fi
+  else
+    echo "WARN: $vcount file(s) exceed $max_lines lines ($scanned scanned):"
+    if [ "$show_lines" -eq 1 ] && [ -s "$tmp_all" ]; then
+      awk -F'\t' '{printf "  %5s  %s\n", $1, $2}' "$tmp_all"
+    else
+      awk -F'\t' '{printf "  %5s  %s\n", $1, $2}' "$tmp_rows"
+    fi
+  fi
+  if [ "$strict" -eq 1 ] && [ "$vcount" -gt 0 ]; then exit 1; fi
+  return 0
+}
+
+run_blast() {
+  local base="HEAD" target="." json_out=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --help|-h) printf 'Usage: agx blast [--base <git-ref>] [--path <dir>] [--json]\nExample: agx blast --base HEAD --json\n'; exit 0 ;;
+      --base) base="${2:-}"; shift 2 || die "Missing value for --base" "agx blast --base HEAD" ;;
+      --path) target="${2:-}"; shift 2 || die "Missing value for --path" "agx blast --path ." ;;
+      --json) json_out=1; shift ;;
+      *) die "Unknown flag '$1' for blast" "agx blast --base HEAD" ;;
+    esac
+  done
+  [ -d "$target" ] || die "Directory not found: $target" "agx blast --path ."
+
+  local abs_target repo_root modified untracked all_changed high_risk="" symbols="" refs=""
+  abs_target="$(cd "$target" && pwd)"
+  git -C "$abs_target" rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "Not a git repository: $abs_target" "agx blast --path ."
+  repo_root="$(git -C "$abs_target" rev-parse --show-toplevel)"
+
+  modified="$(git -C "$repo_root" diff --name-only "$base" 2>/dev/null || true)"
+  untracked="$(git -C "$repo_root" ls-files --others --exclude-standard 2>/dev/null || true)"
+  all_changed="$(printf '%s\n%s\n' "$modified" "$untracked" | awk 'NF' | sort -u)"
+
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    case "$f" in *schema*|*prisma*|*migration*|*.sql|*api*|*route*|*contract*|*.env*|*package.json|*plugin.json|*hooks.json|*auth*) high_risk="${high_risk}${f}"$'\n' ;; esac
+  done <<< "$all_changed"
+
+  if [ -n "$modified" ]; then
+    symbols="$(git -C "$repo_root" diff "$base" --unified=0 2>/dev/null \
+      | grep -E '^[+-].*(export |function |class |interface |type |const |def )' \
+      | sed -E 's/^[+-]//' \
+      | grep -oE '(function|class|interface|type|const|def)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*' \
+      | awk '{print $2}' | sort -u | head -n 15 || true)"
+  fi
+  [ -n "$symbols" ] && refs="$(cd "$repo_root" && rg -l --glob '!.git' --glob '!node_modules' -w "$(echo "$symbols" | paste -sd '|' -)" 2>/dev/null | head -n 20 || true)"
+
+  if [ "$json_out" -eq 1 ]; then
+    jq -n --arg base "$base" --arg changed "$all_changed" --arg highRisk "$high_risk" --arg symbols "$symbols" --arg refs "$refs" \
+      '{base:$base,changedFiles:($changed|split("\n")|map(select(length>0))),highRiskFiles:($highRisk|split("\n")|map(select(length>0))),changedSymbols:($symbols|split("\n")|map(select(length>0))),crossFileReferences:($refs|split("\n")|map(select(length>0)))}'
+  else
+    local c_count
+    c_count="$(printf '%s\n' "$all_changed" | awk 'NF' | wc -l | tr -d ' ')"
+    echo "blast_preflight | base: $base | changed_files: $c_count"
+    if [ -n "$all_changed" ]; then echo "changed:"; echo "$all_changed" | sed 's/^/  /'; fi
+    if [ -n "$high_risk" ]; then echo "high_risk_boundaries:"; printf '%s' "$high_risk" | sed 's/^/  /'; fi
+    if [ -n "$symbols" ]; then echo "changed_symbols:"; echo "$symbols" | sed 's/^/  /'; fi
+    if [ -n "$refs" ]; then echo "files_referencing_changed_symbols:"; echo "$refs" | sed 's/^/  /'; fi
+    if [ "$c_count" -eq 0 ]; then echo "OK: working tree clean against $base."; fi
+  fi
+  return 0
+}
+
+[ $# -eq 0 ] && { print_help; exit 0; }
+CMD="$1"; shift
+case "$CMD" in
+  --help|-h) print_help ;;
+  help)
+    sub="${1:-}"
+    case "$sub" in
+      "") print_help ;;
+      context) run_context --help ;;
+      god-files) run_god_files --help ;;
+      blast) run_blast --help ;;
+      buffer|plan|rubric|unslop-check|mine) exec node "$CLI_TS" "$sub" --help ;;
+      gh) exec node "$ROOT_DIR/scripts/gh.ts" --help ;;
+      telemetry) exec node "$ROOT_DIR/scripts/telemetry.ts" --help ;;
+      *) die "Unknown help topic '$sub'" "agx --help" ;;
+    esac ;;
+  context) run_context "$@" ;;
+  god-files) run_god_files "$@" ;;
+  blast) run_blast "$@" ;;
+  buffer|plan|rubric|unslop-check|mine) exec node "$CLI_TS" "$CMD" "$@" ;;
+  gh) exec node "$ROOT_DIR/scripts/gh.ts" "$@" ;;
+  telemetry) exec node "$ROOT_DIR/scripts/telemetry.ts" "$@" ;;
+  *) die "Unknown command '$CMD'" "agx --help" ;;
+esac
