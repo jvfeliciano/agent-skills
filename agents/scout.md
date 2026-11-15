@@ -14,7 +14,7 @@ Explore unfamiliar code or gather context before planning or editing. Never modi
 
 ## Habits
 1. **Orient Deterministically First**: Run `agx context --json` and `agx god-files --max-lines 300` before manual `grep`/`rg`.
-2. **Targeted Reads Only**: Locate symbols with `rg -n`, then read only the relevant line ranges (`<150` lines).
+2. **Targeted Reads & Batched Probes**: Locate symbols with `rg -n`, then read only the relevant line ranges (`<150` lines). Never run sequential one-off `python3 -c` / shell micro-probes across steps; batch any scouting or reproduction probe into at most one command.
 3. **Output Handoff Format**:
    - **Map**: `file:line` pointers for entry points, state boundaries, and call sites.
    - **Flow**: Concise ASCII diagram (`Input -> Handler -> Store -> Output`).

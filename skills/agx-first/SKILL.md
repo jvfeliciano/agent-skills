@@ -13,8 +13,8 @@ Replace repetitive `sh` orientation, scanning, and verification chains with `agx
 ## 1. Audit Session Logs (`sh` vs `agx`)
 1. Pull the latest digest via `agx telemetry report --digest` (or inspect the pasted `agx` / `sh` command table).
 2. Classify each `sh` call into one of three buckets:
-   - **Direct `agx` replacement**: Covered by an existing `agx` command (see table below).
-   - **Legitimate `sh`**: Build/test runners (`npm test`, `npx prisma`), mutating `git` (`commit`, `rebase`, `cherry-pick`), or `gh` API calls.
+   - **Direct `agx` replacement**: Covered by an existing `agx` command (see table below, including `agx gh`, `agx god-files`, and `agx worktree`).
+   - **Legitimate `sh`**: Build/test runners (`npm test`, `npx prisma`), mutating `git` (`commit`, `rebase`, `cherry-pick`), or one-off `gh` queries not covered by `agx gh`.
    - **Candidate `agx` gap**: Repeated read-only/triage `sh` pattern (3+ times) that belongs in `bin/agx` per `cli-for-agent` (log via `agx buffer add` or implement).
 
 ## 2. `sh` -> `agx` Replacement Table
@@ -23,6 +23,8 @@ Replace repetitive `sh` orientation, scanning, and verification chains with `agx
 | `git status`, `find`, `ls`, `rg` for repo orientation | `agx context --json` |
 | `wc -l` or checking file length | `agx god-files --path <file> --show-lines` |
 | `git diff` + `rg` symbol/caller checks | `agx blast --base HEAD` |
+| `gh pr checks`, `gh pr merge`, `gh issue create`, `gh pr comment` | `agx gh <checks\|merge\|issue-create\|comment>` |
+| `git worktree add/remove` + `ln -s node_modules` | `agx worktree <create\|link-modules\|teardown>` |
 | Prose/markdown quality or slop checks | `agx unslop-check --file <f> --strict` |
 | Tracking out-of-scope debt in notes/TODOs | `agx buffer add` / `agx buffer triage` |
 | Ad-hoc task lists or phase tracking | `agx plan init\|next\|update` |

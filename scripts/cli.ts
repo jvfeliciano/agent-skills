@@ -67,9 +67,15 @@ function walkFiles(dir: string, ext: string, skipName?: string): string[] {
   return out;
 }
 
+function splitBufferSections(filePath: string): { activeLines: string[]; resolvedLines: string[] } {
+  if (!existsSync(filePath)) return { activeLines: [], resolvedLines: [] };
+  const all = readFileSync(filePath, 'utf8').split('\n');
+  const idx = all.findIndex((l) => /^##\s+Resolved\b/i.test(l.trim()));
+  return idx === -1 ? { activeLines: all, resolvedLines: [] } : { activeLines: all.slice(0, idx), resolvedLines: all.slice(idx) };
+}
+
 function parseBuffer(filePath: string): BufferEntry[] {
-  if (!existsSync(filePath)) return [];
-  return readFileSync(filePath, 'utf8').split('\n').flatMap((line) => {
+  return splitBufferSections(filePath).activeLines.flatMap((line) => {
     const m = /^- \[([^\]]+)\] \[([^\]]+)\] `([^`]+)` \| (.+)$/.exec(line.trim());
     return m ? [{ date: m[1], category: m[2], file: m[3], summary: m[4] }] : [];
   });
@@ -78,7 +84,7 @@ function parseBuffer(filePath: string): BufferEntry[] {
 function handleBuffer(args: ParsedArgs): void {
   const sub = args.positional[0];
   if (args.flags.help || !sub) {
-    console.log('Usage: agx buffer <add|list|triage> [options]\n\nExamples:\n  agx buffer add --category react --file src/App.tsx:42 --summary "Unbounded effect"\n  agx buffer list --category react --json\n  agx buffer triage --min 3');
+    console.log('Usage: agx buffer <add|list|triage|resolve> [options]\n\nExamples:\n  agx buffer add --category react --file src/App.tsx:42 --summary "Unbounded effect"\n  agx buffer list --category react --json\n  agx buffer triage --min 3\n  agx buffer resolve --all');
     return;
   }
   const repo = findRepoRoot(strFlag(args.flags, 'path') ?? '.');
@@ -89,10 +95,27 @@ function handleBuffer(args: ParsedArgs): void {
     mkdirSync(dirname(statePath), { recursive: true });
     if (!existsSync(statePath)) writeFileSync(statePath, '# Pattern Buffer\n\nLogged out-of-scope footguns for batch architectural triage.\n\n', 'utf8');
     const date = new Date().toISOString().slice(0, 10), clean = summary.replace(/\s+/g, ' ');
-    writeFileSync(statePath, `${readFileSync(statePath, 'utf8').trimEnd()}\n- [${date}] [${cat}] \`${file}\` | ${clean}\n`, 'utf8');
+    const { activeLines, resolvedLines } = splitBufferSections(statePath);
+    const active = `${activeLines.join('\n').trimEnd()}\n- [${date}] [${cat}] \`${file}\` | ${clean}\n`;
+    writeFileSync(statePath, resolvedLines.length ? `${active}\n${resolvedLines.join('\n').trimStart()}\n` : active, 'utf8');
     return emit(args.flags.json, { added: { date, category: cat, file, summary: clean }, statePath }, () => console.log(`Logged [${cat}] ${file} -> ${statePath}`));
   }
   const entries = parseBuffer(statePath);
+  if (sub === 'resolve') {
+    const filterCat = strFlag(args.flags, 'category');
+    if (!filterCat && !args.flags.all) fail('buffer resolve requires --category <slug> or --all', 'agx buffer resolve --all');
+    const { activeLines, resolvedLines } = splitBufferSections(statePath);
+    const kept: string[] = [], moved: string[] = [];
+    for (const line of activeLines) {
+      const m = /^- \[[^\]]+\] \[([^\]]+)\] `[^`]+` \| .+$/.exec(line.trim());
+      if (m && (args.flags.all || m[1] === filterCat)) moved.push(line.trim());
+      else kept.push(line);
+    }
+    const resBody = resolvedLines.length ? resolvedLines.slice(1).filter((l) => l.trim()) : [];
+    const out = `${kept.join('\n').trimEnd()}\n\n## Resolved\n${[...moved, ...resBody].join('\n')}\n`;
+    if (moved.length) writeFileSync(statePath, out, 'utf8');
+    return emit(args.flags.json, { resolvedCount: moved.length, category: filterCat ?? 'all', statePath }, () => console.log(`Resolved ${moved.length} pattern-buffer item(s).`));
+  }
   if (sub === 'list') {
     const filterCat = strFlag(args.flags, 'category');
     const items = filterCat ? entries.filter((e) => e.category === filterCat) : entries;

@@ -12,6 +12,10 @@ tools: [read_file, run_command, manage_task, send_message, invoke_subagent, mana
 
 Coordinate multi-step tasks across `scout` -> `planner` -> `implementer` -> `reviewer`. Never edit application code directly.
 
+## Guardrails
+- **Explicit Model Tiering**: Always pass `Model: "flash"` for `scout` / `telemetry-analyst` and `Model: "flash"` (or medium tier) for scoped `implementer`/`reviewer` tasks; never default routine workers to a high-tier parent model.
+- **40-Step Wave Ceiling**: Checkpoint state in `.agents/state/plan.json` (`agx plan update`) and emit a `handoff` before exceeding ~40 steps in one wave.
+
 ## Phase Loop
 1. **Scout**: Invoke `scout` (`Model: "flash"`) for `agx context` + `file:line` map. Pass its handoff to `planner`.
 2. **Plan**: Invoke `planner` to slice vertical tracer bullets and run `agx plan init`.

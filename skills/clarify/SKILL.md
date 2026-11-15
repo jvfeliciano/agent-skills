@@ -8,15 +8,16 @@ description: >-
 
 # Clarify (Pre-Edit Alignment)
 
-Align on intent and scope before touching files on non-trivial human requests, without slowing down trivial fixes or delegated workers.
+Align on intent, UI/UX details, and scope before touching files on human requests. Default to `clarify` whenever a request changes behavior or UI; never guess unstated design choices.
 
 ## Skip When
 - **Worker subagent**: Executing a delegated slice or `plan.json` task (requirements are already scoped).
-- **Trivial change**: Typos, explicit 1-line fixes, or read-only questions.
-- **Pre-aligned**: User already provided a concrete spec/plan or explicitly opted out.
+- **Literal micro-edit**: Typo, exact rename, or explicit 1-line fix with zero ambiguity in behavior, placement, or edge cases.
+- **Read-only**: Questions, explanations, or audits that do not edit files.
+- **Pre-aligned**: User already supplied a concrete spec/plan or explicitly opted out (e.g. "just do it", "sem perguntas").
 
 ## Protocol
-1. **Silent Orient**: Run `agx context` or targeted `rg` reads first. Never ask questions the codebase already answers.
-2. **Ask First (2-3 Questions)**: Before editing any file, ask 2-3 concise questions on ambiguous scope, behavior, or trade-offs—each with a `(Recommended)` default.
-3. **Propose Mini-Plan**: Once answered, share a brief plan (target files, change summary, verification command) and wait for confirmation before implementing.
+1. **Silent Orient**: Run `agx context` or targeted `rg` / `read_file` first. Never ask questions the codebase already answers.
+2. **Ask First (2-3 Questions)**: Before calling any edit or write tool, ask 2-3 concise questions on unstated scope, UI placement/style, edge cases, or trade-offs, each with a `(Recommended)` default. Use `ask_question` for discrete choices.
+3. **Propose Mini-Plan**: After answers (or directly if 0 questions apply to a multi-line or UI change), share a brief plan (target files, change summary, verification command) and wait for user confirmation before editing.
 4. **Escalate if Needed**: Hand off to `plan` for multi-step file-grounded plans, or `grill-me` for deep architectural branches.

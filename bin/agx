@@ -33,6 +33,7 @@ Commands:
   unslop-check  Scan markdown/prose for banned AI slop patterns
   mine          Extract user corrections from JSONL transcripts into skill candidates
   gh            Deterministic GitHub CLI wrappers (checks | comment | merge | retarget | issue-create | pr-create)
+  worktree      Manage isolated git worktrees under .worktrees/ (create | link-modules | teardown)
   telemetry     Ingest lifecycle hooks and report tokens, costs, paths, subagents, CLI calls
   help          Show help for a specific command
 
@@ -251,6 +252,7 @@ case "$CMD" in
       blast) run_blast --help ;;
       buffer|plan|rubric|unslop-check|mine) exec node "$CLI_TS" "$sub" --help ;;
       gh) exec node "$ROOT_DIR/scripts/gh.ts" --help ;;
+      worktree) exec node "$ROOT_DIR/scripts/worktree.ts" --help ;;
       telemetry) exec node "$ROOT_DIR/scripts/telemetry.ts" --help ;;
       *) die "Unknown help topic '$sub'" "agx --help" ;;
     esac ;;
@@ -259,6 +261,7 @@ case "$CMD" in
   blast) run_blast "$@" ;;
   buffer|plan|rubric|unslop-check|mine) exec node "$CLI_TS" "$CMD" "$@" ;;
   gh) exec node "$ROOT_DIR/scripts/gh.ts" "$@" ;;
+  worktree) exec node "$ROOT_DIR/scripts/worktree.ts" "$@" ;;
   telemetry) exec node "$ROOT_DIR/scripts/telemetry.ts" "$@" ;;
   *) die "Unknown command '$CMD'" "agx --help" ;;
 esac

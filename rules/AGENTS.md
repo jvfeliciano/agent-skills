@@ -7,8 +7,8 @@
 ## 2. Deterministic CLI First (Context Preservation)
 - Before grepping blindly, orienting manually, or writing ad-hoc verification/parsing scripts in chat, check `agx` (`agx --help` or `<plugin-root>/bin/agx --help`).
 - Use `agx context` for repo orientation, `agx blast` for diff impact pre-flight, `agx god-files` to spot monolithic bloat (`agx god-files --path <file> --show-lines` for line counts instead of `wc -l`), `agx unslop-check` to audit prose, `agx buffer` for recurring footguns, `agx plan` for multi-agent orchestration state, `agx rubric` for verification scoring, and `agx gh` for GitHub PR/issue batches instead of raw `sh` loops.
-- Never reinvent one-off shell/Python throwaway scripts when a deterministic `agx` subcommand exists or belongs in `bin/agx`.
-- Delegate early instead of running 30+ steps in one coordinator: route codebase exploration to `scout`, scoped implementation slices to `worker`/`implementer`, pre-PR audits to `reviewer`, and telemetry triage to `telemetry-analyst` (`flash`).
+- Never reinvent one-off shell/Python throwaway scripts when a deterministic `agx` subcommand exists or belongs in `bin/agx`, and never run sequential `python3 -c` / shell micro-probes across multiple steps (batch any scouting or reproduction probe into at most one command, or verify via tests).
+- **Cost-Aware Delegation**: For 1-2 files or `<30` steps, use `plan` + direct implementation in one warm context instead of spawning subagents. Delegate to `scout`/`implementer`/`reviewer`/`telemetry-analyst` (`flash`) only for parallelizable, multi-file, or 30+ step workloads, and skip `scout` when target files are already named or open.
 
 ## 3. Hardening the Environment & Guarding Against God Files
 - **300-Line Ceiling**: Refuse to grow source files past 300 lines. Split by cohesive feature module or boundary rather than appending to monolithic files.
@@ -28,5 +28,5 @@ Enforce strict rejection of these anti-patterns:
 - **Horizontal layer-cake tickets**: Tasks split by DB/API/UI layers instead of vertically-sliced tracer bullets.
 
 ## 6. Pre-Edit Alignment (Human Requests Only)
-- For non-trivial code or behavior changes requested directly by a human, follow `clarify`: orient read-only first, ask 2-3 clarifying questions with `(Recommended)` defaults, then propose a brief plan after answers before editing.
-- **Skip** for worker/delegated subagents executing scoped tasks, trivial fixes (typos, explicit 1-line edits), read-only questions, or when the user already supplied a spec/plan.
+- Before editing code, UI, or behavior on a human request, load and follow `clarify`: orient read-only first, ask 2-3 questions with `(Recommended)` defaults on any unstated UI/UX, edge-case, or scope choice, then propose a brief plan and wait for confirmation.
+- **Default to asking**: Short UI or feature requests are NOT trivial. **Skip** only for delegated worker subagents, read-only questions, literal typos or 1-line fixes with zero ambiguity, or when the user already supplied a plan or opted out.

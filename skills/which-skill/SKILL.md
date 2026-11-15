@@ -14,13 +14,13 @@ Map the user's current situation to the shortest effective skill sequence. Recom
 - **New or unconfigured repo** -> `setup`
 - **Non-trivial human change request (pre-edit check)** -> `clarify`
 - **Fuzzy idea or big feature** -> `grill-me` -> `ubiquitous-language` -> `design-an-interface` -> `to-spec`
-- **Scoped task needing a pre-code plan** -> `plan`
+- **Scoped task (1-2 files, `<30` steps)** -> `plan` (single warm session; avoid `orchestrate` fan-out overhead)
 - **Two competing architectures** -> `arena` -> `design-an-interface`
 - **Unfamiliar code (*how* it works)** -> `bro`
 - **Unfamiliar code (*why* it exists)** -> `why`
 - **Implementing a slice or bug fix** -> `tdd`
 - **Designing, critiquing, or polishing frontend / native UI** -> `impeccable`
-- **Multi-ticket / parallelizable batch** -> `orchestrate`
+- **Multi-ticket / multi-file / parallelizable batch** -> `orchestrate`
 - **Autonomous execution until goal/plan(s) pass** -> `goal`
 - **New/updated agent CLI tool** -> `cli-for-agent`
 - **Authoring/tightening skills or rules** -> `writing-for-agents`

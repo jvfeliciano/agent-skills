@@ -11,9 +11,13 @@ description: >-
 Act as Executive Chef, not line cook. Decompose, isolate ownership, delegate, and verify handoffs.
 
 ## Rules
-1. **Coordinator Does Zero App Coding**: Stay in triage, state management, delegation, and verification.
-2. **Cluster Before Spawning**: Group overlapping bugs or specs sharing a root cause before launching workers so parallel agents do not duplicate effort or collide.
-3. **Strict File Ownership**: Assign disjoint `files` per active worker in `.agents/state/plan.json` (or use `swarm` `workspace: "share"` / `"branch"` when files overlap).
+1. **Scope Gate (1-2 File Bypass)**: If the task targets 1-2 already-named/open files (`<30` steps), do NOT fan out into `scout`/`implementer`/`reviewer` subagents; execute `plan` + direct implementation in one warm session (optionally one `reviewer` pass at the end).
+2. **Coordinator Does Zero App Coding**: For multi-file/parallel batches, stay in triage, state management, delegation, and verification.
+3. **Skip Redundant `scout`**: Do not spawn `scout` when target files are already named or open; pass exact `file:line` targets directly to workers.
+4. **Cluster Before Spawning**: Group overlapping bugs or specs sharing a root cause before launching workers so parallel agents do not duplicate effort or collide.
+5. **Strict File Ownership**: Assign disjoint `files` per active worker in `.agents/state/plan.json` (or use `agx worktree create --name <slug>` / `swarm` `workspace: "share"` when files overlap).
+6. **Explicit Model Tiering & 25-Step Worker Cap**: Never leave `Model` as `inherit` for routine workers. Pass `Model: "flash"` for `scout`, `telemetry-analyst`, and scoped `implementer`/`reviewer` slices; cap each worker prompt at `<=25` steps with one binary verification command.
+7. **40-Step Wave Ceiling**: Keep each coordinator wave under ~40 steps. Before hitting 40 steps, checkpoint completed/in-progress tasks via `agx plan update` and emit a `handoff` summary for the next wave.
 
 ## Protocol
 1. **Initialize State**: Create the DAG via `agx plan init --goal "<goal>" --tasks '<json>'` (or `to-spec`).
