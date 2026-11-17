@@ -22,6 +22,7 @@ Map the user's current situation to the shortest effective skill sequence. Recom
 - **Designing, critiquing, or polishing frontend / native UI** -> `impeccable`
 - **Multi-ticket / multi-file / parallelizable batch** -> `orchestrate`
 - **Autonomous execution until goal/plan(s) pass** -> `goal`
+- **Tempted to ask "should I do X?" on reversible work** -> `principle-never-block-on-the-human`
 - **New/updated agent CLI tool** -> `cli-for-agent`
 - **Authoring/tightening skills or rules** -> `writing-for-agents`
 - **Adding a new skill to `agent-skills`** -> `add-skill`

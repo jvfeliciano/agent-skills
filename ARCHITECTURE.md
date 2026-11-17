@@ -101,7 +101,7 @@ Outer Loop Payload (specs / bug batch / PR feedback)
 
 ---
 
-## 4. Complete Skill Catalog (30 Skills)
+## 4. Complete Skill Catalog (31 Skills)
 
 | Phase | Skill | Core Purpose | Primary `agx` / Tool Seam |
 |---|---|---|---|
@@ -128,6 +128,7 @@ Outer Loop Payload (specs / bug batch / PR feedback)
 | **Scale** | `goal` | Autonomous loop executing a goal or plan(s) until binary exit checks pass | `agx plan`, `agx rubric` |
 | **Scale** | `handoff` | Compacts session state, locked decisions, and next action for fresh agents | `agx context`, `agx plan` |
 | **Scale** | `pattern-buffer` | Logs out-of-scope footguns for batch root-cause remediation | `agx buffer` |
+| **Scale** | `principle-never-block-on-the-human` | Proceeds on reversible work without blocking; confirms only irreversible actions | `agx buffer add` |
 | **Meta** | `which-skill` | Catalog router mapping user intent to the shortest effective skill chain | Skill catalog |
 | **Meta** | `cli-for-agent` | Non-interactive, `--help`, `--json`, fail-fast CLI design rules | `bin/agx` |
 | **Meta** | `writing-for-agents` | Progressive disclosure and token-compression rules for `SKILL.md` | `agx unslop-check` |

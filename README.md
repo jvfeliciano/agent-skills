@@ -12,7 +12,7 @@ Inspired by the workflows of **Matt Pocock** (`mattpocock/skills`) and **Lauren 
 4. **Michelin Kitchen (Executive Chef)**: The coordinator designs the menu, maintains deterministic tooling, and delegates to isolated workers (`orchestrate`), avoiding micromanagement and throwaway chat scripts.
 5. **Architecture and Principles**: See [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-## Catalog of 30 Skills
+## Catalog of 31 Skills
 
 ### Onboarding & Alignment (before writing code)
 - **`setup`**: Configures a repository for `agent-skills` and `agx` (detects stack, build/test/lint commands, docs, and tracker, and initializes `.agents/state/` and `AGENTS.md`).
@@ -46,6 +46,7 @@ Inspired by the workflows of **Matt Pocock** (`mattpocock/skills`) and **Lauren 
 - **`goal`**: Autonomous loop (*goal / potato mode*) that executes an objective, a single plan, or multiple plans until all binary exit criteria pass, with a *circuit breaker* for blockers.
 - **`handoff`**: Compacts the current session state, closed decisions, and exact next step for another session or agent.
 - **`pattern-buffer`**: Avoids fixing out-of-scope technical debt mid-task; logs patterns to `.agents/state/pattern-buffer.md` (`agx buffer add`) for batch triage (`agx buffer triage`).
+- **`principle-never-block-on-the-human`**: Keeps execution unblocked on reversible work (*proceed, then present*), logging issues for self-healing and confirming only irreversible actions.
 - **`which-skill`**: Catalog router that recommends the shortest skill or sequence for the current goal without executing it prematurely.
 - **`mine-transcripts`**: Analyzes past `.jsonl` conversation logs (`agx mine`) to convert repeated user corrections into lint rules, `agx` commands, or new skills.
 - **`add-skill`**: Guides authoring, registering, and verifying new skills in `agent-skills` in compliance with `ARCHITECTURE.md`, progressive disclosure, and `agx`.
